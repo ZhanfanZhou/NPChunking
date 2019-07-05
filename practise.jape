@@ -1,0 +1,36 @@
+Phase: Wandering
+Input: Token
+Options: control = appelt
+
+Macro: aLocation
+(
+    ({Location})
+)
+
+Rule: EvaluationAnnotation
+(
+    {Token.category == "SYM"}
+
+):equal
+-->
+{
+    try{
+    gate.AnnotationSet equalSet = (gate.AnnotationSet)bindings.get("equal");
+
+    // Gets offsets we need
+    Long start = equalSet.firstNode().getOffset();
+    Long end = equalSet.lastNode().getOffset();
+
+    //Gets string content we need to store
+    String sym = doc.getContent().getContent(start, end-1).toString();
+
+    // Create Feature map
+    gate.FeatureMap features = Factory.newFeatureMap();
+    features.put("rule", "EvaluationAnnotation");
+    features.put("location", sym);
+
+    outputAS.add(start, end, "Wandering", features);
+    } catch (Exception e){}
+}
+// :pp.LocationList = {rule = "pLocation", locations = ""}
+
