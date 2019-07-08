@@ -97,6 +97,7 @@ def outputCRFFormat(formatted, fileout):
 
 
 # unnecessary to manage test in this way. just make it as same as training format
+# just make it fit in gate diff tool format
 def makeTestWithoutAnswers(parser_tree):
     words = parser_tree.leaves()
     tags = [parser_tree[tag_i].label() for tag_i in [i[:-1] for i in parser_tree.treepositions('leaves')]]
