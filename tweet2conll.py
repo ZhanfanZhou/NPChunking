@@ -5,10 +5,10 @@
 # Note that the converter is based on char offset which is necessary to provide in input file.
 # Input tweets are duplicated,and each duplicate corresponds only with an extraction of its own.
 
-# May,2019
+# May,2019 Zhanfan
 
 import nltk
-from init import outputCRFFormat
+from parsetree2conll import outputCRFFormat
 import pandas as pd
 
 
