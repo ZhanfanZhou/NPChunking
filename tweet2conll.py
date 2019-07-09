@@ -44,7 +44,14 @@ def makeTrain(sent, nps):
     return output_format
 
 
-def readin(files):
+def makeTestWithoutAnswers(sent, adrs):
+    ards = None
+    words = nltk.word_tokenize(sent)
+    tags = [t[1] for t in nltk.pos_tag(words)]
+    return [[word, tag] for word, tag in zip(words, tags)]
+
+
+def readin(files, make_data):
     def f(x):
         return pd.Series(dict(begin=list(x['begin']),
                               end=list(x['end']),
@@ -62,7 +69,7 @@ def readin(files):
         for index, row in df.iterrows():
             print("Tweet: ", row.tweet.values[0])
             adrs = list(collectADRs(row))
-            outputCRFFormat(makeTrain(row.tweet.values[0], adrs), demo)
+            outputCRFFormat(make_data(row.tweet.values[0], adrs), demo)
             print()
 
 
@@ -80,10 +87,14 @@ def collectADRs(row):
         yield offset[2]
 
 
-demo = open('./demo.data', 'w')
-# readin(['~/zhanfan/SMM4H_data/TrainData1.tsv',
-#         '~/zhanfan/SMM4H_data/TrainData2.tsv',
-#         '~/zhanfan/SMM4H_data/TrainData3.tsv',
-#         '~/zhanfan/SMM4H_data/TrainData4.tsv'])
+# demo = open('./adr_train_conll.data', 'w')
+# readin(['~/zhanfan/dataset/SMM4H_data/TrainData1.tsv',
+#         '~/zhanfan/dataset/SMM4H_data/TrainData3.tsv',
+#         '~/zhanfan/dataset/SMM4H_data/TrainData4.tsv'], makeTrain)
 
-readin(['~/zhanfan/SMM4H_data/TrainData4.tsv'])
+# demo = open('./adr_test.conll', 'w')
+# readin(['~/zhanfan/dataset/SMM4H_data/TrainData2.tsv'], makeTestWithoutAnswers)
+
+demo = open('./adr_test_answer.conll', 'w')
+readin(['~/zhanfan/dataset/SMM4H_data/TrainData2.tsv'], makeTrain)
+
