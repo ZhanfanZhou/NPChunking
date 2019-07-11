@@ -10,7 +10,8 @@ from sklearn.decomposition import LatentDirichletAllocation
 import numpy as np
 from textblob import TextBlob
 
-file_path = "./olid-training-v1.0.tsv"
+# file_path = "./olid-training-v1.0.tsv"
+file_path = "out_IND.data"
 raw_data = pd.read_csv(file_path, header=0, sep='\t', dtype={'tweet': str})
 reindexed_data = raw_data['tweet']
 # reindexed_data.index = raw_data['id']
@@ -39,10 +40,10 @@ def get_top_n_words1(n_top_words, count_vectorizer, text_data):
 
 count_vectorizer = CountVectorizer(stop_words='english')
 words, word_values = get_top_n_words1(n_top_words=20,
-                                     count_vectorizer=count_vectorizer,
-                                     text_data=reindexed_data)
+                                      count_vectorizer=count_vectorizer,
+                                      text_data=reindexed_data)
 
-fig, ax = plt.subplots(figsize=(16,8))
+fig, ax = plt.subplots(figsize=(16, 8))
 ax.bar(range(len(words)), word_values)
 ax.set_xticks(range(len(words)))
 ax.set_xticklabels(words, rotation='vertical')
