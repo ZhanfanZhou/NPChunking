@@ -52,40 +52,13 @@ ax.set_xlabel('Word')
 ax.set_ylabel('Number of occurences')
 plt.show()
 
-tagged_headlines = [TextBlob(reindexed_data[i]).tags for i in range(reindexed_data.shape[0])]
-tagged_headlines_df = pd.DataFrame({'tags': tagged_headlines})
-
-word_counts = []
-pos_counts = {}
-
-for headline in tagged_headlines_df[u'tags']:
-    word_counts.append(len(headline))
-    for tag in headline:
-        if tag[1] in pos_counts:
-            pos_counts[tag[1]] += 1
-        else:
-            pos_counts[tag[1]] = 1
-
-print('Total number of words: ', np.sum(word_counts))
-print('Mean number of words per headline: ', np.mean(word_counts))
-y = stats.norm.pdf(np.linspace(0, 100, 10), np.mean(word_counts), np.std(word_counts))
-
-fig, ax = plt.subplots(figsize=(18, 8))
-ax.hist(word_counts, bins=range(1, 100), density=True)
-ax.plot(np.linspace(0, 100, 10), y, 'r--', linewidth=1)
-ax.set_title('Headline word lengths')
-ax.set_xticks(range(1, 100))
-ax.set_xlabel('Number of words')
-plt.show()
-
-small_count_vectorizer = CountVectorizer(stop_words='english', max_features=40000)
-small_text_sample = reindexed_data.sample(n=200, random_state=0).values
-
-# print('Headline before vectorization: {}'.format(small_text_sample[123]))
-
+word_feature = 200
+small_count_vectorizer = CountVectorizer(stop_words='english', max_features=word_feature)
+small_text_sample = reindexed_data.sample(n=300, random_state=0).values
 small_document_term_matrix = small_count_vectorizer.fit_transform(small_text_sample)
-
-# print('Headline after vectorization: \n{}'.format(small_document_term_matrix[123]))
+# print("doc", small_document_term_matrix)
+# print("doc", small_document_term_matrix.shape)
+# scipy.sparse.csr.csr_matrix
 
 
 def get_keys(topic_matrix):
@@ -94,6 +67,7 @@ def get_keys(topic_matrix):
     categories for a given topic matrix
     '''
     keys = topic_matrix.argmax(axis=1).tolist()
+    print("KEYS", keys)
     return keys
 
 
@@ -103,6 +77,7 @@ def keys_to_counts(keys):
     accompanying magnitudes for a given list of keys
     '''
     count_pairs = Counter(keys).items()
+    print(count_pairs)
     categories = [pair[0] for pair in count_pairs]
     counts = [pair[1] for pair in count_pairs]
     return (categories, counts)
@@ -115,19 +90,28 @@ def get_top_n_words2(n, keys, document_term_matrix, count_vectorizer):
     '''
     top_word_indices = []
     for topic in range(n_topics):
+        print("current topic ", topic)
         temp_vector_sum = 0
         for i in range(len(keys)):
             if keys[i] == topic:
+                # print("what is i?", i)
+                # print("adding", document_term_matrix[i, :])
                 temp_vector_sum += document_term_matrix[i]
-        temp_vector_sum = temp_vector_sum.toarray()
-        top_n_word_indices = np.flip(np.argsort(temp_vector_sum)[0][-n:],0)
+        # print("temp_vector_sum added", temp_vector_sum)
+        if isinstance(temp_vector_sum, int):
+            print("all zeros!!")
+            temp_vector_sum = np.zeros((1, word_feature))
+        else:
+            temp_vector_sum = temp_vector_sum.toarray()
+        print("-------")
+        top_n_word_indices = np.flip(np.argsort(temp_vector_sum)[0][-n:], 0)
         top_word_indices.append(top_n_word_indices)
     top_words = []
     for topic in top_word_indices:
         topic_words = []
         for index in topic:
-            temp_word_vector = np.zeros((1,document_term_matrix.shape[1]))
-            temp_word_vector[:,index] = 1
+            temp_word_vector = np.zeros((1, document_term_matrix.shape[1]))
+            temp_word_vector[:, index] = 1
             the_word = count_vectorizer.inverse_transform(temp_word_vector)[0][0]
             topic_words.append(the_word.encode('ascii').decode('utf-8'))
         top_words.append(" ".join(topic_words))
@@ -151,6 +135,29 @@ fig, ax = plt.subplots(figsize=(16, 8))
 ax.bar(lsa_categories, lsa_counts)
 ax.set_xticks(lsa_categories)
 ax.set_xticklabels(labels)
-ax.set_ylabel('Number of headlines')
+ax.set_ylabel('Number of tweets')
 ax.set_title('LSA topic counts')
+plt.show()
+
+print("\n======LDA======\n")
+
+lda_model = LatentDirichletAllocation(n_components=n_topics, learning_method='online',
+                                      random_state=0, verbose=0)
+lda_topic_matrix = lda_model.fit_transform(small_document_term_matrix)
+lda_keys = get_keys(lda_topic_matrix)
+lda_categories, lda_counts = keys_to_counts(lda_keys)
+top_n_words_lda = get_top_n_words2(10, lda_keys, small_document_term_matrix, small_count_vectorizer)
+
+for i in range(len(top_n_words_lda)):
+    print("Topic {}: ".format(i+1), top_n_words_lda[i])
+
+top_4_words = get_top_n_words2(4, lda_keys, small_document_term_matrix, small_count_vectorizer)
+labels = ['Topic {}: \n'.format(i) + top_4_words[i] for i in lda_categories]
+
+fig, ax = plt.subplots(figsize=(16, 8))
+ax.bar(lda_categories, lda_counts)
+ax.set_xticks(lda_categories)
+ax.set_xticklabels(labels)
+ax.set_title('LDA topic counts')
+ax.set_ylabel('Number of tweets')
 plt.show()
