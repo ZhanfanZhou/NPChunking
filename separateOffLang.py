@@ -1,4 +1,4 @@
-# this file is to
+# this file is for bettering looking into the data by separating the tweets by classes.
 import pandas as pd
 
 
