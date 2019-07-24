@@ -11,7 +11,7 @@ import numpy as np
 from textblob import TextBlob
 
 # file_path = "./olid-training-v1.0.tsv"
-file_path = "out_IND.data"
+file_path = "out_NOT.data"
 raw_data = pd.read_csv(file_path, header=0, sep='\t', dtype={'tweet': str})
 reindexed_data = raw_data['tweet']
 # reindexed_data.index = raw_data['id']
