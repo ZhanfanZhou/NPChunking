@@ -2,6 +2,7 @@ import nltk
 from collections import defaultdict
 from nltk.stem.snowball import EnglishStemmer  # Assuming we're working with English
 import pandas as pd
+import math
 
 
 class Index:
@@ -67,9 +68,9 @@ def getPolarizedWord(iidx, label_info):
         for id in ids:
             if label_info[id] == 'OFF':
                 off += 1
-        return off/float(len(ids))
+        return off/float(len(ids)), len(ids)
 
-    return sorted([(word, getPorprotion(docs)) for word, docs in iidx.items()], key=lambda x: -(abs(0.5-(x[1]))))
+    return sorted([(word, getPorprotion(docs)) for word, docs in iidx.items()], key=lambda x: -math.log(x[1][1], 2)*(pow((x[1][0]-0.5), 2)))
 
 
 indexer = Index(nltk.word_tokenize,
@@ -77,3 +78,4 @@ indexer = Index(nltk.word_tokenize,
               nltk.corpus.stopwords.words('english'))
 createTweetsInvertedIndex(indexer)
 print(getPolarizedWord(indexer.index, indexer.info))
+
