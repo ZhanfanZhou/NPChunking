@@ -5,7 +5,6 @@ import pandas as pd
 
 
 class Index:
-    """ Inverted index datastructure """
 
     def __init__(self, tokenizer, stemmer=None, stopwords=None):
         """
@@ -18,6 +17,7 @@ class Index:
         self.index = defaultdict(list)
         self.documents = {}
         self.__unique_id = 'UNKNOWN'
+        self.info = {}
         if not stopwords:
             self.stopwords = set()
         else:
@@ -33,7 +33,7 @@ class Index:
 
         return [(self.documents.get(id, None), id) for id in self.index.get(word)]
 
-    def add(self, document, doc_id):
+    def add(self, document, doc_id, label):
         """
         Add a document string to the index
         """
@@ -49,28 +49,31 @@ class Index:
                 self.index[token].append(self.__unique_id)
 
         self.documents[self.__unique_id] = document
+        self.info[self.__unique_id] = label
 
 #       show tweet unique id and contents as well
-
-
-index = Index(nltk.word_tokenize,
-              EnglishStemmer(),
-              nltk.corpus.stopwords.words('english'))
-
-index.add('Industrial Disease','71')
-index.add('Private Investigations','2')
-index.add('Twisting by the Pool','3')
-index.add('Skateaway','73')
-index.add('Walk of Life','74')
-index.add('Romeo and Juliet','6')
-index.add('Tunnel of Love','7')
-index.add('Money for Nothing','78')
-index.add('Sultans of Swing','9')
-
-print(index.lookup('love'))
 
 
 def createTweetsInvertedIndex(inverted_indexer, tweet_path='./olid-training-v1.0.tsv'):
     df = pd.read_csv(tweet_path, header=0, sep='\t', dtype={'id': str})
     for index, row in df.iterrows():
-        inverted_indexer.add(row.tweet, row.id)
+        inverted_indexer.add(row.tweet, row.id, row.subtask_a)
+
+
+# two params are attributes of class index
+def getPolarizedWord(iidx, label_info):
+    def getPorprotion(ids):
+        off = 0
+        for id in ids:
+            if label_info[id] == 'OFF':
+                off += 1
+        return -(abs(0.5-(off/float(len(ids)))))
+
+    return sorted([(word, getPorprotion(docs)) for word, docs in iidx.items()], key=lambda x: x[1])
+
+
+indexer = Index(nltk.word_tokenize,
+              EnglishStemmer(),
+              nltk.corpus.stopwords.words('english'))
+createTweetsInvertedIndex(indexer)
+print(getPolarizedWord(indexer.index, indexer.info))
