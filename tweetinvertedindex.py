@@ -3,6 +3,7 @@ from collections import defaultdict
 from nltk.stem.snowball import EnglishStemmer  # Assuming we're working with English
 import pandas as pd
 import math
+from termcolor import colored
 
 
 class Index:
@@ -24,12 +25,13 @@ class Index:
         else:
             self.stopwords = set(stopwords)
 
-    def lookup(self, word):
+    def lookup(self, word, stem=True):
         """
         Lookup a word in the index
+        :return content of doc and its id
         """
         word = word.lower()
-        if self.stemmer:
+        if stem and self.stemmer:
             word = self.stemmer.stem(word)
 
         return [(self.documents.get(id, None), id) for id in self.index.get(word)]
@@ -70,12 +72,30 @@ def getPolarizedWord(iidx, label_info):
                 off += 1
         return off/float(len(ids)), len(ids)
 
-    return sorted([(word, getPorprotion(docs)) for word, docs in iidx.items()], key=lambda x: -math.log(x[1][1], 2)*(pow((x[1][0]-0.5), 2)))
+    res = sorted([(word, getPorprotion(docs)) for word, docs in iidx.items()],
+                 key=lambda x: -math.log(x[1][1], 2) * (pow((x[1][0] - 0.5), 2)))
+    print(res)
+    return res
+
+
+def getExceptionals(inverted_indexer, p_words, n=200):
+    for word, rate in p_words[0:n]:
+        print(colored("looking up: %s, offensive rate = %f, count = %d" % (word, rate[0], rate[1]), "green"))
+        docs = inverted_indexer.lookup(word, False)
+        if rate[0] >= 0.5:
+            for doc in docs:
+                if inverted_indexer.info.get(doc[1]) == "NOT":
+                    print(doc[0])
+        else:
+            for doc in docs:
+                if inverted_indexer.info.get(doc[1]) == "OFF":
+                    print(doc[0])
 
 
 indexer = Index(nltk.word_tokenize,
               EnglishStemmer(),
               nltk.corpus.stopwords.words('english'))
 createTweetsInvertedIndex(indexer)
-print(getPolarizedWord(indexer.index, indexer.info))
+# getPolarizedWord(indexer.index, indexer.info)
+getExceptionals(indexer, getPolarizedWord(indexer.index, indexer.info))
 
