@@ -67,9 +67,9 @@ def getPolarizedWord(iidx, label_info):
         for id in ids:
             if label_info[id] == 'OFF':
                 off += 1
-        return -(abs(0.5-(off/float(len(ids)))))
+        return off/float(len(ids))
 
-    return sorted([(word, getPorprotion(docs)) for word, docs in iidx.items()], key=lambda x: x[1])
+    return sorted([(word, getPorprotion(docs)) for word, docs in iidx.items()], key=lambda x: -(abs(0.5-(x[1]))))
 
 
 indexer = Index(nltk.word_tokenize,
