@@ -82,6 +82,8 @@ def getExceptionals(inverted_indexer, p_words, n=200):
     for word, rate in p_words[0:n]:
         print(colored("looking up: %s, offensive rate = %f, count = %d" % (word, rate[0], rate[1]), "green"))
         docs = inverted_indexer.lookup(word, False)
+        if rate == 1.0 or rate == 0.0:
+            continue
         if rate[0] >= 0.5:
             for doc in docs:
                 if inverted_indexer.info.get(doc[1]) == "NOT":

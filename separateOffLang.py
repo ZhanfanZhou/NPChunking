@@ -2,7 +2,12 @@
 import pandas as pd
 
 
-def sep(file_path, raw_tweet):
+def sep(file_path, raw_tweet=False):
+    """
+    :param file_path:
+    :param raw_tweet: false for tweetlda.py use, true for obtaining raw tweets
+    :return:
+    """
     df = pd.read_csv(file_path, header=0, sep='\t', dtype={'id': str})
     # print(df.head(10))
     if not raw_tweet:
@@ -64,4 +69,4 @@ def add_headers(outputs):
         output.write('id\ttweet\n')
 
 
-sep('./olid-training-v1.0.tsv', raw_tweet=True)
+sep('./olid-training-v1.0.tsv', raw_tweet=False)
