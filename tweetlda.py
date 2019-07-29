@@ -8,7 +8,9 @@ import matplotlib.mlab as mlab
 from sklearn.decomposition import TruncatedSVD
 from sklearn.decomposition import LatentDirichletAllocation
 import numpy as np
+from twokenize import tokenize
 from textblob import TextBlob
+import nltk
 
 # file_path = "./olid-training-v1.0.tsv"
 file_path = "out_NOT.data"
@@ -35,10 +37,11 @@ def get_top_n_words1(n_top_words, count_vectorizer, text_data):
     words = [word[0].encode('ascii').decode('utf-8') for
              word in count_vectorizer.inverse_transform(word_vectors)]
 
-    return (words, word_values[0, :n_top_words].tolist()[0])
+    return words, word_values[0, :n_top_words].tolist()[0]
 
 
-count_vectorizer = CountVectorizer(stop_words='english')
+new_stop_words = nltk.corpus.stopwords.words('english')+[",",".","!","?","&",";","\"","'",':']
+count_vectorizer = CountVectorizer(stop_words=new_stop_words, tokenizer=tokenize)
 words, word_values = get_top_n_words1(n_top_words=20,
                                       count_vectorizer=count_vectorizer,
                                       text_data=reindexed_data)

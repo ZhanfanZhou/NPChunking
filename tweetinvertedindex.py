@@ -4,6 +4,7 @@ from nltk.stem.snowball import EnglishStemmer  # Assuming we're working with Eng
 import pandas as pd
 import math
 from termcolor import colored
+from twokenize import tokenize
 
 
 class Index:
@@ -41,7 +42,7 @@ class Index:
         Add a document string to the index
         """
         self.__unique_id = doc_id
-        for token in [t.lower() for t in nltk.word_tokenize(document)]:
+        for token in [t.lower() for t in self.tokenizer(document)]:
             if token in self.stopwords:
                 continue
 
@@ -94,10 +95,8 @@ def getExceptionals(inverted_indexer, p_words, n=200):
                     print(doc[0])
 
 
-indexer = Index(nltk.word_tokenize,
+indexer = Index(tokenize,
               EnglishStemmer(),
               nltk.corpus.stopwords.words('english'))
 createTweetsInvertedIndex(indexer)
-# getPolarizedWord(indexer.index, indexer.info)
 getExceptionals(indexer, getPolarizedWord(indexer.index, indexer.info))
-
