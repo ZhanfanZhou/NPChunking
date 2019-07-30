@@ -62,7 +62,9 @@ def sep(file_path, raw_tweet=False, gate=False):
         out_IND = open('./out_IND_gate.data', 'w', encoding='utf-8')
         out_GRP = open('./out_GRP_gate.data', 'w', encoding='utf-8')
         out_OTH = open('./out_OTH_gate.data', 'w', encoding='utf-8')
+        out_all = open('./out_all_a_gate.data', 'w', encoding='utf-8')
         for index, row in df.iterrows():
+            out_all.write(row.id + '\t' + row.subtask_a + '\t' + row.tweet + '\n')
             if row.subtask_a == "NOT":
                 out_NOT.write(row.id + '\t' + row.subtask_a + '\t' + row.tweet + '\n')
             else:
@@ -91,4 +93,4 @@ def add_headers(outputs):
         output.write('id\ttweet\n')
 
 
-sep('./olid-training-v1.0.tsv', raw_tweet=False, gate=True)
+sep('./olid-training-v1.0.tsv', raw_tweet=True, gate=True)
