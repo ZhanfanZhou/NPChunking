@@ -53,7 +53,7 @@ idx2tag = {i: w for w, i in tag2idx.items()}
 X_word = [[word2idx[w[0]] for w in s] for s in sentences]
 # print(X_word[4])
 X_word = pad_sequences(maxlen=max_len, sequences=X_word, value=word2idx["PAD"], padding='post', truncating='post')
-# print(X_word[4])
+print(X_word[4])
 
 chars = set([w_i for w in words for w_i in w])
 n_chars = len(chars)
@@ -79,6 +79,7 @@ for sentence in sentences:
 print(X_char[4])
 
 y = [[tag2idx[w[2]] for w in s] for s in sentences]
+print(y[4])
 y = pad_sequences(maxlen=max_len, sequences=y, value=tag2idx["PAD"], padding='post', truncating='post')
 
 X_word_tr, X_word_te, y_tr, y_te = train_test_split(X_word, y, test_size=0.1, random_state=2018)

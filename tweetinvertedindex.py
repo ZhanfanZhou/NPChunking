@@ -57,46 +57,65 @@ class Index:
 
 #       show tweet unique id and contents as well
 
+    def getPolarizedWord(self):
+        iidx = self.index
+        label_info = self.info
+
+        def getPorprotion(ids):
+            off = 0
+            for id in ids:
+                if label_info[id] == 'OFF':
+                    off += 1
+            return off / float(len(ids)), len(ids)
+
+        res = sorted([(word, getPorprotion(docs)) for word, docs in iidx.items()],
+                     key=lambda x: -math.log(x[1][1], 2) * (pow((x[1][0] - 0.5), 2)))
+        for r in res[:100]:
+            print(r)
+        return res
+
+    def getExceptionals(self, p_words, n=200):
+        for word, rate in p_words[0:n]:
+            print(colored("looking up: %s, offensive rate = %f, count = %d" % (word, rate[0], rate[1]), "green"))
+            docs = self.lookup(word, False)
+            if rate == 1.0 or rate == 0.0:
+                continue
+            if rate[0] >= 0.5:
+                for doc in docs:
+                    if self.info.get(doc[1]) == "NOT":
+                        print(doc[0])
+            else:
+                for doc in docs:
+                    if self.info.get(doc[1]) == "OFF":
+                        print(doc[0])
+
 
 def createTweetsInvertedIndex(inverted_indexer, tweet_path='./olid-training-v1.0.tsv'):
     df = pd.read_csv(tweet_path, header=0, sep='\t', dtype={'id': str})
     for index, row in df.iterrows():
         inverted_indexer.add(row.tweet, row.id, row.subtask_a)
+    return inverted_indexer
 
 
-# two params are attributes of class index
-def getPolarizedWord(iidx, label_info):
-    def getPorprotion(ids):
-        off = 0
-        for id in ids:
-            if label_info[id] == 'OFF':
-                off += 1
-        return off/float(len(ids)), len(ids)
-
-    res = sorted([(word, getPorprotion(docs)) for word, docs in iidx.items()],
-                 key=lambda x: -math.log(x[1][1], 2) * (pow((x[1][0] - 0.5), 2)))
-    print(res)
-    return res
+def get_tweets_weights_by_ids(inverted_indexer, words_weights):
+    """
+    :param inverted_indexer: indexer
+    :param weights: from getPolarizedWord()
+    :return:
+    """
+    ranks = {}
+    for word, weight in words_weights:
+        for id in inverted_indexer.index.get(word):
+            ranks[id] = ranks.get(id, 0) + weight[0]
+    return ranks
 
 
-def getExceptionals(inverted_indexer, p_words, n=200):
-    for word, rate in p_words[0:n]:
-        print(colored("looking up: %s, offensive rate = %f, count = %d" % (word, rate[0], rate[1]), "green"))
-        docs = inverted_indexer.lookup(word, False)
-        if rate == 1.0 or rate == 0.0:
-            continue
-        if rate[0] >= 0.5:
-            for doc in docs:
-                if inverted_indexer.info.get(doc[1]) == "NOT":
-                    print(doc[0])
-        else:
-            for doc in docs:
-                if inverted_indexer.info.get(doc[1]) == "OFF":
-                    print(doc[0])
-
-
-indexer = Index(tokenize,
-              EnglishStemmer(),
-              nltk.corpus.stopwords.words('english'))
-createTweetsInvertedIndex(indexer)
-getExceptionals(indexer, getPolarizedWord(indexer.index, indexer.info))
+if __name__ == '__main__':
+    indexer = createTweetsInvertedIndex(Index(tokenize,
+                                              EnglishStemmer(),
+                                              nltk.corpus.stopwords.words('english')))
+    words_weights = indexer.getPolarizedWord()
+    indexer.getExceptionals(words_weights)
+    # print(len(indexer.lookup('fuck')))
+    r = get_tweets_weights_by_ids(indexer, words_weights)
+    print(r)
