@@ -93,4 +93,17 @@ def add_headers(outputs):
         output.write('id\ttweet\n')
 
 
-sep('./olid-training-v1.0.tsv', raw_tweet=True, gate=True)
+def make_test(file_lb='./labels-levela.csv', file_twt='./testset-levela.tsv'):
+    df_lb = pd.read_csv(file_lb, header=0, sep=',', dtype={'id': str}).set_index('id')
+    df_twt = pd.read_csv(file_twt, header=0, sep='\t', dtype={'id': str}).set_index('id')
+    # print(df_lb.head(10))
+    # print(df_twt.head(10))
+    out_test = open('./test.data', 'w', encoding='utf-8')
+    df = df_twt.join(df_lb, on='id').reset_index()
+    df = df.rename(columns={'label': 'subtask_a'})
+    return df
+
+
+if __name__ == '__main__':
+    # sep('./olid-training-v1.0.tsv', raw_tweet=True, gate=True)
+    make_test()

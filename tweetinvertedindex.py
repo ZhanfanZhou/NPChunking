@@ -1,6 +1,6 @@
 import nltk
 from collections import defaultdict
-from nltk.stem.snowball import EnglishStemmer  # Assuming we're working with English
+from nltk.stem.snowball import EnglishStemmer
 import pandas as pd
 import math
 from termcolor import colored
@@ -70,8 +70,8 @@ class Index:
 
         res = sorted([(word, getPorprotion(docs)) for word, docs in iidx.items()],
                      key=lambda x: -math.log(x[1][1], 2) * (pow((x[1][0] - 0.5), 2)))
-        for r in res[:100]:
-            print(r)
+        # for r in res[:100]:
+        #     print(r)
         return res
 
     def getExceptionals(self, p_words, n=200):
@@ -97,17 +97,47 @@ def createTweetsInvertedIndex(inverted_indexer, tweet_path='./olid-training-v1.0
     return inverted_indexer
 
 
-def get_tweets_weights_by_ids(inverted_indexer, words_weights):
+def get_tweets_weights_by_ids(inverted_indexer, words_weights, ids):
     """
     :param inverted_indexer: indexer
-    :param weights: from getPolarizedWord()
+    :param words_weights: see getPolarizedWord()
     :return:
     """
     ranks = {}
     for word, weight in words_weights:
         for id in inverted_indexer.index.get(word):
             ranks[id] = ranks.get(id, 0) + weight[0]
-    return ranks
+
+    scores = []
+    for id in ids:
+        scores.append([ranks.get(id)])
+    return scores
+
+
+def get_test_weights(words_weights, test_tweets, test_ids, stemmer=EnglishStemmer(), tokenizer=tokenize):
+    """
+    first transform words_weights into a dictionary
+    :param words_weights: see getPolarizedWord()
+    :param test_tweets:
+    :param test_ids:
+    :param stemmer:
+    :param tokenizer: should be same as class Index
+    :return:
+    """
+    weights_dict = {}
+    for word, weight in words_weights:
+        weights_dict[word] = weight
+    ranks = {}
+    for id, tweet in zip(test_ids, test_tweets):
+        for token in tokenizer(tweet):
+            weight = weights_dict.get(stemmer.stem(token.lower()), None)
+            if weight is not None:
+                ranks[id] = ranks.get(id, 0) + weight[0]
+
+    scores = []
+    for id in test_ids:
+        scores.append([ranks.get(id)])
+    return scores
 
 
 if __name__ == '__main__':
@@ -115,7 +145,8 @@ if __name__ == '__main__':
                                               EnglishStemmer(),
                                               nltk.corpus.stopwords.words('english')))
     words_weights = indexer.getPolarizedWord()
-    indexer.getExceptionals(words_weights)
+    # indexer.getExceptionals(words_weights)
     # print(len(indexer.lookup('fuck')))
-    r = get_tweets_weights_by_ids(indexer, words_weights)
-    print(r)
+    # r = get_tweets_weights_by_ids(indexer, words_weights)
+    s = get_test_weights(words_weights, ['shit on you.', 'fuck off my dear unknownfuckword.'], ['zzz', 'bbb'])
+    print(s)
