@@ -22,7 +22,7 @@ def encode_feature(tr_ids, tr_tweets, ts_ids, ts_tweets, inverted_indexer, gate_
     :return: encoded training, testing set
     """
     print("Encoding features...")
-    vectorizer = CountVectorizer(ngram_range=(1, 2), max_features=100)
+    vectorizer = CountVectorizer(ngram_range=(1, 2), max_features=20)
     tr_x = vectorizer.fit_transform(tr_tweets).toarray()
     ts_x = vectorizer.transform(ts_tweets).toarray()
     if inverted_indexer:
@@ -61,9 +61,13 @@ def run_svm(x_train, y, x_test):
 
 def error_analyse(ids, tweets, predictions, golds, mute_correct=True):
     print("Analysing errors...")
-    binary = [p == g for p, g in zip(predictions, golds)]
-    for i in range(len(binary)):
-        if not binary[i]:
+    final = list(zip(predictions, golds))
+    tp_tn = [bundle[0] == bundle[1] for bundle in final]
+    fp = [bundle[1] == 0 and bundle[0] == 1 for bundle in final]
+    fn = [bundle[1] == 1 and bundle[0] == 0 for bundle in final]
+    print("fp=%d\tfn=%d\ttp+tn=%d" % (sum(fp), sum(fn), sum(tp_tn)))
+    for i in range(len(tp_tn)):
+        if not tp_tn[i]:
             if golds[i] == 0:  # false positive
                 print(colored("id: %s\tlabel: %s\t%s" % (ids[i], "NOT", tweets[i]), "yellow"))
             if golds[i] == 1:  # false negative
