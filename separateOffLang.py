@@ -1,4 +1,5 @@
 # this file is for bettering looking into the data by separating the tweets by classes.
+# And also provides a data reader for testing set which returns a data frame object.
 import pandas as pd
 
 
@@ -93,15 +94,15 @@ def add_headers(outputs):
         output.write('id\ttweet\n')
 
 
-def make_test(file_lb='./labels-levela.csv', file_twt='./testset-levela.tsv'):
+def make_test(file_lb='./labels-levela.csv', file_twt='./testset-levela.tsv', out_path='./test.data'):
     df_lb = pd.read_csv(file_lb, header=0, sep=',', dtype={'id': str}).set_index('id')
     df_twt = pd.read_csv(file_twt, header=0, sep='\t', dtype={'id': str}).set_index('id')
-    # print(df_lb.head(10))
-    # print(df_twt.head(10))
-    out_test = open('./test.data', 'w', encoding='utf-8')
+    out_test = open(out_path, 'w', encoding='utf-8')
     df = df_twt.join(df_lb, on='id').reset_index()
-    df = df.rename(columns={'label': 'subtask_a'})
-    return df
+    out_test.write('id\ttweet\tsubtask_a\n')
+    for index, row in df.iterrows():
+        out_test.write(row.id + '\t' + row.tweet + '\t' + row.label + '\n')
+    out_test.close()
 
 
 if __name__ == '__main__':

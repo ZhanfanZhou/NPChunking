@@ -89,55 +89,53 @@ class Index:
                     if self.info.get(doc[1]) == "OFF":
                         print(doc[0])
 
+    def get_tweets_weights_by_ids(self, words_weights, ids):
+        """
+        :param words_weights: see getPolarizedWord()
+        :return: a list of scores that ordered by param ids
+        """
+        ranks = {}
+        for word, weight in words_weights:
+            for id in self.index.get(word):
+                ranks[id] = ranks.get(id, 0) + weight[0]
+
+        scores = []
+        for id in ids:
+            scores.append([ranks.get(id)])
+        return scores
+
+    def get_test_weights(self, words_weights, test_tweets, test_ids):
+        """
+        first transform words_weights into a dictionary
+        :param words_weights: see getPolarizedWord()
+        :param test_tweets:
+        :param test_ids:
+        :return: see get_tweets_weights_by_ids()
+        """
+        weights_dict = {}
+        for word, weight in words_weights:
+            weights_dict[word] = weight
+        ranks = {}
+        for id, tweet in zip(test_ids, test_tweets):
+            for token in self.tokenizer(tweet):
+                token = token.lower()
+                if self.stemmer:
+                    token = self.stemmer.stem(token)
+                weight = weights_dict.get(token, None)
+                if weight is not None:
+                    ranks[id] = ranks.get(id, 0) + weight[0]
+
+        scores = []
+        for id in test_ids:
+            scores.append([ranks.get(id)])
+        return scores
+
 
 def createTweetsInvertedIndex(inverted_indexer, tweet_path='./olid-training-v1.0.tsv'):
     df = pd.read_csv(tweet_path, header=0, sep='\t', dtype={'id': str})
     for index, row in df.iterrows():
         inverted_indexer.add(row.tweet, row.id, row.subtask_a)
     return inverted_indexer
-
-
-def get_tweets_weights_by_ids(inverted_indexer, words_weights, ids):
-    """
-    :param inverted_indexer: indexer
-    :param words_weights: see getPolarizedWord()
-    :return:
-    """
-    ranks = {}
-    for word, weight in words_weights:
-        for id in inverted_indexer.index.get(word):
-            ranks[id] = ranks.get(id, 0) + weight[0]
-
-    scores = []
-    for id in ids:
-        scores.append([ranks.get(id)])
-    return scores
-
-
-def get_test_weights(words_weights, test_tweets, test_ids, stemmer=EnglishStemmer(), tokenizer=tokenize):
-    """
-    first transform words_weights into a dictionary
-    :param words_weights: see getPolarizedWord()
-    :param test_tweets:
-    :param test_ids:
-    :param stemmer:
-    :param tokenizer: should be same as class Index
-    :return:
-    """
-    weights_dict = {}
-    for word, weight in words_weights:
-        weights_dict[word] = weight
-    ranks = {}
-    for id, tweet in zip(test_ids, test_tweets):
-        for token in tokenizer(tweet):
-            weight = weights_dict.get(stemmer.stem(token.lower()), None)
-            if weight is not None:
-                ranks[id] = ranks.get(id, 0) + weight[0]
-
-    scores = []
-    for id in test_ids:
-        scores.append([ranks.get(id)])
-    return scores
 
 
 if __name__ == '__main__':
@@ -148,5 +146,5 @@ if __name__ == '__main__':
     # indexer.getExceptionals(words_weights)
     # print(len(indexer.lookup('fuck')))
     # r = get_tweets_weights_by_ids(indexer, words_weights)
-    s = get_test_weights(words_weights, ['shit on you.', 'fuck off my dear unknownfuckword.'], ['zzz', 'bbb'])
+    s = indexer.get_test_weights(words_weights, ['shit on you.', 'fuck off my dear unknownfuckword.'], ['zzz', 'bbb'])
     print(s)
