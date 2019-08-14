@@ -7,26 +7,29 @@ from nltk.stem.snowball import EnglishStemmer
 import nltk
 import numpy as np
 from sklearn import metrics
+from termcolor import colored
 
 
-def feature_encode(inverted_indexer, tr_ids, tr_tweets, ts_ids, ts_tweets):
+def encode_feature(tr_ids, tr_tweets, ts_ids, ts_tweets, inverted_indexer, gate_exporter):
     """
     encode test and train set at once.
-    :param inverted_indexer:
+    :param inverted_indexer: optional, if want feature from iindexer
     :param tr_ids: training...
     :param tr_tweets: training...
     :param ts_ids: testing...
     :param ts_tweets: testing...
+    :param gate_exporter optional, if want feature from GATE
     :return: encoded training, testing set
     """
     print("Encoding features...")
     vectorizer = CountVectorizer(ngram_range=(1, 2), max_features=100)
-    words_weights = inverted_indexer.getPolarizedWord()
     tr_x = vectorizer.fit_transform(tr_tweets).toarray()
-    tr_x = np.append(tr_x, inverted_indexer.get_tweets_weights_by_ids(words_weights, tr_ids), axis=1)
-
     ts_x = vectorizer.transform(ts_tweets).toarray()
-    ts_x = np.append(ts_x, inverted_indexer.get_test_weights(words_weights, ts_tweets, ts_ids), axis=1)
+    if inverted_indexer:
+        tr_x = np.append(tr_x, inverted_indexer.get_tweets_weights_by_ids(tr_ids), axis=1)
+        ts_x = np.append(ts_x, inverted_indexer.get_test_weights(ts_tweets, ts_ids), axis=1)
+    if gate_exporter:
+        pass
     return tr_x, ts_x
 
 
@@ -56,12 +59,28 @@ def run_svm(x_train, y, x_test):
     return classifier.predict(x_test)
 
 
+def error_analyse(ids, tweets, predictions, golds, mute_correct=True):
+    print("Analysing errors...")
+    binary = [p == g for p, g in zip(predictions, golds)]
+    for i in range(len(binary)):
+        if not binary[i]:
+            if golds[i] == 0:  # false positive
+                print(colored("id: %s\tlabel: %s\t%s" % (ids[i], "NOT", tweets[i]), "yellow"))
+            if golds[i] == 1:  # false negative
+                print(colored("id: %s\tlabel: %s\t%s" % (ids[i], "OFF", tweets[i]), "red"))
+        elif not mute_correct:
+            print(colored("%s" % (tweets[i]), "green"))
+
+
 if __name__ == '__main__':
     ids_train, tweets_train, labels_train = read_in(_type='train')
     ids_test, tweets_test, labels_test = read_in(_type='test')
     indexer = createTweetsInvertedIndex(Index(tokenizer=tokenize,
                                               stemmer=None,
                                               stopwords=nltk.corpus.stopwords.words('english')))
-    X_train, X_test = feature_encode(indexer, ids_train, tweets_train, ids_test, tweets_test)
+    X_train, X_test = encode_feature(ids_train, tweets_train, ids_test, tweets_test,
+                                     inverted_indexer=indexer,
+                                     gate_exporter=None)
     pred = run_svm(X_train, labels_train, X_test)
     print(metrics.classification_report(labels_test, pred))
+    error_analyse(ids_test, tweets_test, pred, labels_test, mute_correct=True)

@@ -21,6 +21,7 @@ class Index:
         self.documents = {}
         self.__unique_id = 'UNKNOWN'
         self.info = {}
+        self.words_weights = []
         if not stopwords:
             self.stopwords = set()
         else:
@@ -29,6 +30,7 @@ class Index:
     def lookup(self, word, stem=True):
         """
         Lookup a word in the index
+        :param stem prevent stem(stemmed word) != stemmed word
         :return content of doc and its id
         """
         word = word.lower()
@@ -58,23 +60,52 @@ class Index:
 #       show tweet unique id and contents as well
 
     def getPolarizedWord(self):
+        '''
+        in order to get words that are mostly OFF/NOT,
+        give each word a score by going through inverted index
+        then sort it
+        :return:
+        '''
         iidx = self.index
         label_info = self.info
 
         def getPorprotion(ids):
+            l = len(ids)
             off = 0
             for id in ids:
                 if label_info[id] == 'OFF':
                     off += 1
-            return off / float(len(ids)), len(ids)
+            s = -math.log(l, 2) * (pow((off / float(l) - 0.5), 2))
+            return s
 
         res = sorted([(word, getPorprotion(docs)) for word, docs in iidx.items()],
-                     key=lambda x: -math.log(x[1][1], 2) * (pow((x[1][0] - 0.5), 2)))
-        # for r in res[:100]:
-        #     print(r)
+                     key=lambda x: x[1])
         return res
 
+    def init_words_weights(self):
+        '''
+        get "weights" for each word by going through inverted index
+        :return: (word, weight)
+        '''
+        iidx = self.index
+        label_info = self.info
+
+        def getPorprotion(ids):
+            l = len(ids)
+            off = 0
+            for id in ids:
+                if label_info[id] == 'OFF':
+                    off += 1
+            return off / float(l)
+        self.words_weights = [(word, getPorprotion(docs)) for word, docs in iidx.items()]
+
     def getExceptionals(self, p_words, n=200):
+        '''
+        get not/offensive tweets that contains words that are mostly offensive/not.
+        :param p_words: polarized words from getPolarizedWord()
+        :param n: top n words
+        :return: none
+        '''
         for word, rate in p_words[0:n]:
             print(colored("looking up: %s, offensive rate = %f, count = %d" % (word, rate[0], rate[1]), "green"))
             docs = self.lookup(word, False)
@@ -89,31 +120,33 @@ class Index:
                     if self.info.get(doc[1]) == "OFF":
                         print(doc[0])
 
-    def get_tweets_weights_by_ids(self, words_weights, ids):
+    def get_tweets_weights_by_ids(self, ids):
         """
-        :param words_weights: see getPolarizedWord()
         :return: a list of scores that ordered by param ids
         """
+        if not self.words_weights:
+            self.init_words_weights()
         ranks = {}
-        for word, weight in words_weights:
+        for word, weight in self.words_weights:
             for id in self.index.get(word):
-                ranks[id] = ranks.get(id, 0) + weight[0]
+                ranks[id] = ranks.get(id, 0) + weight
 
         scores = []
         for id in ids:
             scores.append([ranks.get(id)])
         return scores
 
-    def get_test_weights(self, words_weights, test_tweets, test_ids):
+    def get_test_weights(self, test_tweets, test_ids):
         """
         first transform words_weights into a dictionary
-        :param words_weights: see getPolarizedWord()
         :param test_tweets:
         :param test_ids:
         :return: see get_tweets_weights_by_ids()
         """
+        if not self.words_weights:
+            self.init_words_weights()
         weights_dict = {}
-        for word, weight in words_weights:
+        for word, weight in self.words_weights:
             weights_dict[word] = weight
         ranks = {}
         for id, tweet in zip(test_ids, test_tweets):
@@ -123,7 +156,7 @@ class Index:
                     token = self.stemmer.stem(token)
                 weight = weights_dict.get(token, None)
                 if weight is not None:
-                    ranks[id] = ranks.get(id, 0) + weight[0]
+                    ranks[id] = ranks.get(id, 0) + weight
 
         scores = []
         for id in test_ids:
@@ -132,6 +165,12 @@ class Index:
 
 
 def createTweetsInvertedIndex(inverted_indexer, tweet_path='./olid-training-v1.0.tsv'):
+    '''
+    create a inverted index for tweets data.
+    :param inverted_indexer:
+    :param tweet_path:
+    :return:
+    '''
     df = pd.read_csv(tweet_path, header=0, sep='\t', dtype={'id': str})
     for index, row in df.iterrows():
         inverted_indexer.add(row.tweet, row.id, row.subtask_a)
@@ -142,9 +181,6 @@ if __name__ == '__main__':
     indexer = createTweetsInvertedIndex(Index(tokenize,
                                               EnglishStemmer(),
                                               nltk.corpus.stopwords.words('english')))
-    words_weights = indexer.getPolarizedWord()
-    # indexer.getExceptionals(words_weights)
-    # print(len(indexer.lookup('fuck')))
-    # r = get_tweets_weights_by_ids(indexer, words_weights)
-    s = indexer.get_test_weights(words_weights, ['shit on you.', 'fuck off my dear unknownfuckword.'], ['zzz', 'bbb'])
-    print(s)
+    ranked_words_weights = indexer.getPolarizedWord()
+    indexer.getExceptionals(ranked_words_weights)
+    # print(indexer.lookup('fuck', stem=True))
