@@ -66,7 +66,6 @@ def error_analyse(ids, tweets, predictions, golds, mute_correct=True):
     print("Analysing errors...")
     log = open('./log/%s.log' % datetime.datetime.now().strftime('%m-%d %H:%M:%S'), 'w')
     final = list(zip(predictions, golds))
-    # tp_tn = [bundle[0] == bundle[1] for bundle in final]
     tp = [bundle[1] == 1 and bundle[0] == 1 for bundle in final]
     tn = [bundle[1] == 0 and bundle[0] == 0 for bundle in final]
     fp = [bundle[1] == 0 and bundle[0] == 1 for bundle in final]
