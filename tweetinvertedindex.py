@@ -60,16 +60,16 @@ class Index:
 #       show tweet unique id and contents as well
 
     def getPolarizedWord(self):
-        '''
+        """
         in order to get words that are mostly OFF/NOT,
         give each word a score by going through inverted index
         then sort it
-        :return:
-        '''
+        :return: a ranked list
+        """
         iidx = self.index
         label_info = self.info
 
-        def getPorprotion(ids):
+        def get_score(ids):
             l = len(ids)
             off = 0
             for id in ids:
@@ -78,34 +78,33 @@ class Index:
             s = -math.log(l, 2) * (pow((off / float(l) - 0.5), 2))
             return s
 
-        res = sorted([(word, getPorprotion(docs)) for word, docs in iidx.items()],
+        res = sorted([(word, get_score(docs)) for word, docs in iidx.items()],
                      key=lambda x: x[1])
         return res
 
     def init_words_weights(self):
-        '''
+        """
         get "weights" for each word by going through inverted index
-        :return: (word, weight)
-        '''
+        """
         iidx = self.index
         label_info = self.info
 
-        def getPorprotion(ids):
+        def get_weight(ids):
             l = len(ids)
             off = 0
             for id in ids:
                 if label_info[id] == 'OFF':
                     off += 1
             return off / float(l)
-        self.words_weights = [(word, getPorprotion(docs)) for word, docs in iidx.items()]
+        self.words_weights = [(word, get_weight(docs)) for word, docs in iidx.items()]
 
-    def getExceptionals(self, p_words, n=200):
-        '''
+    def get_exceptions(self, p_words, n=200):
+        """
         get not/offensive tweets that contains words that are mostly offensive/not.
         :param p_words: polarized words from getPolarizedWord()
         :param n: top n words
         :return: none
-        '''
+        """
         for word, rate in p_words[0:n]:
             print(colored("looking up: %s, offensive rate = %f, count = %d" % (word, rate[0], rate[1]), "green"))
             docs = self.lookup(word, False)
@@ -164,23 +163,29 @@ class Index:
         return scores
 
 
-def createTweetsInvertedIndex(inverted_indexer, tweet_path='./olid-training-v1.0.tsv'):
-    '''
+def create_tweets_inverted_index(inverted_indexer, tweet_data=None, tweet_path='./olid-training-v1.0.tsv'):
+    """
     create a inverted index for tweets data.
     :param inverted_indexer:
+    :param tweet_data optional, if used, skip opening file.
     :param tweet_path:
     :return:
-    '''
-    df = pd.read_csv(tweet_path, header=0, sep='\t', dtype={'id': str})
-    for index, row in df.iterrows():
-        inverted_indexer.add(row.tweet, row.id, row.subtask_a)
+    """
+    if not tweet_data:
+        tweet_df = pd.read_csv(tweet_path, header=0, sep='\t', dtype={'id': str})
+        for index, row in tweet_df.iterrows():
+            inverted_indexer.add(row.tweet, row.id, row.subtask_a)
+    else:
+        for id, tweet, label in tweet_data:
+            subtask_a = "OFF" if label == 1 else "NOT"
+            inverted_indexer.add(tweet, id, subtask_a)
     return inverted_indexer
 
 
 if __name__ == '__main__':
-    indexer = createTweetsInvertedIndex(Index(tokenize,
-                                              EnglishStemmer(),
-                                              nltk.corpus.stopwords.words('english')))
+    indexer = create_tweets_inverted_index(Index(tokenize,
+                                                 EnglishStemmer(),
+                                                 nltk.corpus.stopwords.words('english')))
     ranked_words_weights = indexer.getPolarizedWord()
-    indexer.getExceptionals(ranked_words_weights)
+    indexer.get_exceptions(ranked_words_weights)
     # print(indexer.lookup('fuck', stem=True))
