@@ -8,6 +8,8 @@ import nltk
 import numpy as np
 from sklearn import metrics
 from termcolor import colored
+from fromGATE import GateExporter
+import datetime
 
 
 def encode_feature(tr_ids, tr_tweets, ts_ids, ts_tweets, inverted_indexer, gate_exporter):
@@ -29,7 +31,8 @@ def encode_feature(tr_ids, tr_tweets, ts_ids, ts_tweets, inverted_indexer, gate_
         tr_x = np.append(tr_x, inverted_indexer.get_tweets_weights_by_ids(tr_ids), axis=1)
         ts_x = np.append(ts_x, inverted_indexer.get_test_weights(ts_tweets, ts_ids), axis=1)
     if gate_exporter:
-        pass
+        tr_x = np.append(tr_x, gate_exporter.get_length_feature(tr_ids), axis=1)
+        ts_x = np.append(ts_x, gate_exporter.get_length_feature(ts_ids), axis=1)
     return tr_x, ts_x
 
 
@@ -61,19 +64,25 @@ def run_svm(x_train, y, x_test):
 
 def error_analyse(ids, tweets, predictions, golds, mute_correct=True):
     print("Analysing errors...")
+    log = open('./log/%s.log' % datetime.datetime.now().strftime('%m-%d %H:%M:%S'), 'w')
     final = list(zip(predictions, golds))
-    tp_tn = [bundle[0] == bundle[1] for bundle in final]
+    # tp_tn = [bundle[0] == bundle[1] for bundle in final]
+    tp = [bundle[1] == 1 and bundle[0] == 1 for bundle in final]
+    tn = [bundle[1] == 0 and bundle[0] == 0 for bundle in final]
     fp = [bundle[1] == 0 and bundle[0] == 1 for bundle in final]
     fn = [bundle[1] == 1 and bundle[0] == 0 for bundle in final]
-    print("fp=%d\tfn=%d\ttp+tn=%d" % (sum(fp), sum(fn), sum(tp_tn)))
+    tp_tn = tp or tn
+    print("fp=%d\tfn=%d\ttp=%d\ttn=%d" % (sum(fp), sum(fn), sum(tp), sum(tn)))
     for i in range(len(tp_tn)):
         if not tp_tn[i]:
             if golds[i] == 0:  # false positive
                 print(colored("id: %s\tlabel: %s\t%s" % (ids[i], "NOT", tweets[i]), "yellow"))
             if golds[i] == 1:  # false negative
                 print(colored("id: %s\tlabel: %s\t%s" % (ids[i], "OFF", tweets[i]), "red"))
-        elif not mute_correct:
-            print(colored("%s" % (tweets[i]), "green"))
+        else:
+            if not mute_correct:
+                print(colored("%s" % (tweets[i]), "green"))
+            log.write(ids[i]+'\n')
 
 
 if __name__ == '__main__':
@@ -82,9 +91,10 @@ if __name__ == '__main__':
     indexer = createTweetsInvertedIndex(Index(tokenizer=tokenize,
                                               stemmer=None,
                                               stopwords=nltk.corpus.stopwords.words('english')))
+    gate = GateExporter(tweets_train+tweets_test, ids_train+ids_test)
     X_train, X_test = encode_feature(ids_train, tweets_train, ids_test, tweets_test,
                                      inverted_indexer=indexer,
-                                     gate_exporter=None)
+                                     gate_exporter=gate)
     pred = run_svm(X_train, labels_train, X_test)
     print(metrics.classification_report(labels_test, pred))
     error_analyse(ids_test, tweets_test, pred, labels_test, mute_correct=True)

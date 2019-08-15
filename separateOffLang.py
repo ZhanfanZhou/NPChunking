@@ -12,7 +12,7 @@ def sep(file_path, raw_tweet=False, gate=False):
     """
     df = pd.read_csv(file_path, header=0, sep='\t', dtype={'id': str})
     # print(df.head(10))
-    if not raw_tweet:
+    if not raw_tweet:  # with headers, includes ids and tweets
         out_NOT = open('./out_NOT.data', 'w', encoding='utf-8')
         out_UNT = open('./out_UNT.data', 'w', encoding='utf-8')
         out_TIN = open('./out_TIN.data', 'w', encoding='utf-8')
@@ -35,7 +35,7 @@ def sep(file_path, raw_tweet=False, gate=False):
                         out_GRP.write(row.id+'\t'+row.tweet + '\n')
                     elif row.subtask_c == "OTH":
                         out_OTH.write(row.id+'\t'+row.tweet + '\n')
-    elif not gate:
+    elif not gate:  # without header, raw tweets
         out_NOT = open('./out_NOT_text.data', 'w', encoding='utf-8')
         out_UNT = open('./out_UNT_text.data', 'w', encoding='utf-8')
         out_TIN = open('./out_TIN_text.data', 'w', encoding='utf-8')
@@ -56,7 +56,7 @@ def sep(file_path, raw_tweet=False, gate=False):
                         out_GRP.write(row.tweet + '\n')
                     elif row.subtask_c == "OTH":
                         out_OTH.write(row.tweet + '\n')
-    else:
+    else:  # export to gate, without headers, includes ids, tweets, labels
         out_NOT = open('./out_NOT_gate.data', 'w', encoding='utf-8')
         out_UNT = open('./out_UNT_gate.data', 'w', encoding='utf-8')
         out_TIN = open('./out_TIN_gate.data', 'w', encoding='utf-8')
