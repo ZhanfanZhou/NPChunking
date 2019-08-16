@@ -23,11 +23,11 @@ class GateExporter:
         return np.mean([len(word) for word in self.gate_token[id]])
 
     def get_length_feature(self, ids):
-        '''
+        """
         length feature can make 3 more samples correct
         :param ids:
         :return: numpy appendable feature list
-        '''
+        """
         encoded_list = []
         for id in ids:
             l = self.get_length(id)

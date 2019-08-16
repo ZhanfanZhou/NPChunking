@@ -40,15 +40,15 @@ def encode_feature(tr_ids, tr_tweets, ts_ids, ts_tweets, inverted_indexer, gate_
     return tr_x, ts_x
 
 
-def read_in(file_path='./olid-training-v1.0.tsv', _type='train', warehouse=None):
+def read_in(_type='train', warehouse=None):
     """
     read in data and init TweetWarehouse
-    :param file_path:
     :param _type:
     :param warehouse: where data store in
     :return: trainable format
     """
     print("Loading in %sing set..." % _type)
+    file_path = './olid-training-v1.0.tsv'
     if _type == 'test':
         file_path = './test.data'
     df = pd.read_csv(file_path, header=0, sep='\t', dtype={'id': str})
