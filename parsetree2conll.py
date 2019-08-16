@@ -1,3 +1,7 @@
+"""
+The script could be used to extract tree nodes from parse trees and then transform them into conll format.
+The sample data is from treebank
+"""
 from nltk.tree import Tree
 from nltk.corpus import treebank as tb
 
