@@ -97,4 +97,3 @@ def collectADRs(row):
 
 demo = open('./adr_test_answer.conll', 'w')
 readin(['~/zhanfan/dataset/SMM4H_data/TrainData2.tsv'], makeTrain)
-
